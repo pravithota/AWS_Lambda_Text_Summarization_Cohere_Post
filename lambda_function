@@ -1,0 +1,46 @@
+import json
+import boto3
+
+# {
+# 'modelId': 'cohere.command-text-v14',
+# 'contentType':'application/json',
+# 'accept: application/json',
+# 'body': '{\'prompt\':\'this is where you place your input text\',\'max_tokens\':200,\'temperature\':0.9,\'p\':1, \'k\':0}'
+#}
+
+model_id='cohere.command-text-v14'
+contentType = 'application/json'
+accept = 'application/json'
+
+bedrock_cleint = boto3.client('bedrock-runtime')
+def lambda_handler(event, context):
+    body = json.loads(event['body'])
+    prompt = body.get('prompt')
+
+    body_to_llm = {
+        'prompt': prompt,
+        'max_tokens':200,
+        'temperature':0.5,
+        'p':0.9,
+        'k':0
+    }
+    payload = {
+        'modelId':model_id,
+        'contentType': contentType,
+        'accept': accept,
+        'body': json.dumps(body_to_llm)
+    }
+    response = bedrock_cleint.invoke_model(**payload)
+    print(response)
+
+    res_bytes = response['body'].read()
+    res_json = json.loads(res_bytes)
+
+    print(res_json)
+
+    res_text = res_json['generations'][0]['text']
+    
+    return {
+        'statusCode': 200,
+        'body': json.dumps(res_text)
+    }
